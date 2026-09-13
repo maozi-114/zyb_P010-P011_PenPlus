@@ -1,0 +1,54 @@
+#!/bin/sh
+# Run as root on the Z03 (for example: adb shell /home/user/z03plus/setup_ssh.sh).
+# The Z03 root filesystem is read-only, so this intentionally uses the existing
+# non-privileged `user` account and a writable, self-contained sshd config.
+set -eu
+
+USER_NAME=user
+SSH_PORT="${SSH_PORT:-22}"
+BASE=/home/user/z03plus/ssh
+STATE_DIR=/home/user/z03plus
+CONF="$BASE/sshd_config"
+START="$BASE/start-sshd.sh"
+[ "$(id -u)" = 0 ] || { echo "Run this script as root." >&2; exit 1; }
+case "$SSH_PORT" in ''|*[!0-9]*|0|*[!0-9]*) exit 1;; esac
+
+mkdir -p "$BASE" /var/run/sshd
+chmod 700 "$BASE"
+if [ ! -f "$BASE/ssh_host_ed25519_key" ]; then
+    ssh-keygen -q -t ed25519 -N '' -f "$BASE/ssh_host_ed25519_key"
+fi
+cat > "$CONF" <<EOF
+Port $SSH_PORT
+ListenAddress 0.0.0.0
+Protocol 2
+HostKey $BASE/ssh_host_ed25519_key
+PidFile $BASE/sshd.pid
+AuthorizedKeysFile /home/$USER_NAME/.ssh/authorized_keys
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+AllowUsers $USER_NAME
+X11Forwarding no
+AllowTcpForwarding no
+Subsystem sftp /usr/libexec/sftp-server
+EOF
+chmod 600 "$CONF"
+cat > "$START" <<'EOF'
+#!/bin/sh
+set -eu
+BASE=/home/user/z03plus/ssh
+CONF="$BASE/sshd_config"
+PIDFILE="$BASE/sshd.pid"
+if [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then exit 0; fi
+rm -f "$PIDFILE"
+mkdir -p /var/run/sshd
+chmod 755 /var/run/sshd
+/usr/sbin/sshd -t -f "$CONF"
+exec /usr/sbin/sshd -f "$CONF"
+EOF
+chmod 700 "$START"
+"$START"
+"$STATE_DIR/update_ssh_status.sh"
+printf '%s\n' "SSH enabled. Add a public key to /home/user/.ssh/authorized_keys."

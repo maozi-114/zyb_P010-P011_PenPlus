@@ -1,0 +1,11 @@
+# Build artifacts excluded from this source package
+
+This repository intentionally does not include:
+
+- Downloaded Qt and libstdc++ ARM sysroots
+- `binutils` / `patchelf` binaries
+- Vendor Z03 binaries or Qt libraries
+- Generated `.rcc` and `.so` files
+- Device-exported Qt resources
+
+See [README.md](README.md) for the required build and deployment steps.

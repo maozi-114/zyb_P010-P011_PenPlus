@@ -1,0 +1,27 @@
+.claude/
+
+# Generated resources and binaries
+z03plus_overlay/*.rcc
+*.so
+*.o
+*.a
+*.elf
+
+# Device exports and deployment artifacts
+qrc/
+Z03Plus
+libZ03Plus.so
+
+# Toolchains, SDKs, and downloaded sysroots
+sysroot/
+toolchain/
+third_party/
+
+# Build and editor artifacts
+build/
+out/
+cmake-build-*/
+__pycache__/
+*.py[cod]
+*.swp
+*~

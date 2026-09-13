@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="/ZybQmlFiles/ZybSet">
+    <file alias="SetMainPage.qml">SetMainPage.qml</file>
+    <file alias="Z03PlusPage.qml">Z03PlusPage.qml</file>
+    <file alias="SshPage.qml">SshPage.qml</file>
+  </qresource>
+</RCC>

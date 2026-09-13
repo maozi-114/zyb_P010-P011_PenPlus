@@ -1,0 +1,10 @@
+Z03Plus
+Copyright (C) 2026 maozi-114 and contributors
+
+This project incorporates ideas and portions of early implementation derived from PenMods:
+https://github.com/PenUniverse/PenMods
+
+PenMods is licensed under the GNU General Public License, version 3.
+This project is distributed under the GNU General Public License, version 3 or (at your option) any later version. See LICENSE for the full terms.
+
+This repository contains source code for Z03/P010/P011-compatible dictionary-pen extension experiments. It does not include vendor binaries, extracted Qt resources, SDK/sysroot content, or generated device binaries.
