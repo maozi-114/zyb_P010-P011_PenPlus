@@ -4,6 +4,7 @@ import QtQuick.Layouts 1.3
 import "../Funcs/UILogics.js" as UILogic
 import "../ZybControls/"
 import "../Style"
+import Z03Plus 1.0
 
 Rectangle {
     id: root
@@ -11,6 +12,7 @@ Rectangle {
     color: "#0F0F0F"
     property color cardColor: Qt.rgba(60/255, 61/255, 66/255, 0.6)
     property bool sshPageVisible: false
+    SshService { id: sshService }
 
     ZybBackButton {
         id: backButton
@@ -105,7 +107,7 @@ Rectangle {
                 radius: 8
                 checkable: false
                 backgroundTheme: root.cardColor
-                onClicked: { root.sshPageVisible = true; root.loadSshStatus() }
+                onClicked: { root.sshPageVisible = true; root.refreshSshStatus() }
             }
             BasicButton {
                 text: qsTr("音乐播放器")
@@ -147,18 +149,44 @@ Rectangle {
             anchors.top: parent.top; anchors.topMargin: 18
         }
         BasicButton {
+            text: "⏻"
+            anchors.right: refreshButton.left; anchors.rightMargin: 10
+            anchors.top: parent.top; anchors.topMargin: 9
+            width: 56; height: 48; radius: 24; checkable: false
+            backgroundTheme: root.cardColor
+            onClicked: {
+                if (root.sshRunning === qsTr("已开启")) {
+                    sshService.stop()
+                    root.showTip(qsTr("正在关闭 SSH 服务"))
+                } else {
+                    sshService.start()
+                    root.showTip(qsTr("正在启动 SSH 服务"))
+                }
+                sshRefreshTimer.restart()
+            }
+        }
+        BasicButton {
+            id: refreshButton
             text: "↻"
             anchors.right: parent.right; anchors.rightMargin: 16
             anchors.top: parent.top; anchors.topMargin: 9
             width: 52; height: 48; radius: 24; checkable: false
             backgroundTheme: root.cardColor
-            onClicked: root.loadSshStatus()
+            onClicked: root.refreshSshStatus()
         }
-        Column {
-            anchors.left: parent.left; anchors.leftMargin: 36
-            anchors.right: parent.right; anchors.rightMargin: 36
+        Flickable {
+            anchors.left: parent.left; anchors.leftMargin: 28
+            anchors.right: parent.right; anchors.rightMargin: 20
             anchors.top: parent.top; anchors.topMargin: 74
-            spacing: 14
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 14
+            clip: true
+            contentWidth: width
+            contentHeight: sshDetails.height + 10
+            flickableDirection: Flickable.VerticalFlick
+            Column {
+                id: sshDetails
+                width: parent.width - 8
+                spacing: 14
             ZybText { text: qsTr("服务：") + root.sshRunning }
             ZybText { text: qsTr("IP 地址：") + root.sshIp; wrapMode: Text.WrapAnywhere }
             ZybText { text: qsTr("端口：") + root.sshPort }
@@ -170,17 +198,6 @@ Rectangle {
                 wrapMode: Text.WordWrap
                 text: qsTr("使用 SSH 公钥免密码登录；仅允许 user 登录，root 的 SSH 登录已禁用。")
             }
-            BasicButton {
-                text: qsTr("启动 SSH 服务")
-                width: 250; height: 58; radius: 8; checkable: false
-                backgroundTheme: root.cardColor
-                enabled: false
-                opacity: 0.55
-            }
-            ZybText {
-                width: parent.width; color: "#B8B8B8"; font.pixelSize: 18
-                wrapMode: Text.WordWrap
-                text: qsTr("请通过 ADB 执行 start-sshd.sh 启动服务。")
             }
         }
     }
@@ -191,27 +208,36 @@ Rectangle {
     property string sshUser: "user"
     property string sshKeyStatus: "未配置"
     property string sshCommand: ""
-    function loadSshStatus() {
-        var request = new XMLHttpRequest()
-        request.onreadystatechange = function() {
-            if (request.readyState !== XMLHttpRequest.DONE || request.status !== 200)
-                return
-            var rows = request.responseText.split("\\n")
-            for (var i = 0; i < rows.length; ++i) {
-                var part = rows[i].indexOf("=")
-                if (part < 1) continue
-                var key = rows[i].slice(0, part)
-                var value = rows[i].slice(part + 1)
-                if (key === "running") root.sshRunning = value === "on" ? qsTr("已开启") : qsTr("未开启")
-                else if (key === "ip") root.sshIp = value
-                else if (key === "port") root.sshPort = value
-                else if (key === "user") root.sshUser = value
-                else if (key === "key_status") root.sshKeyStatus = value
-                else if (key === "command") root.sshCommand = value
+    property int sshRefreshAttempts: 0
+    Timer {
+        id: sshRefreshTimer
+        interval: 700
+        repeat: false
+        onTriggered: {
+            root.loadSshStatus()
+            if (root.sshRefreshAttempts > 0) {
+                root.sshRefreshAttempts--
+                sshRefreshTimer.restart()
             }
         }
-        request.open("GET", "file:///home/user/z03plus/ssh-status.txt?" + Date.now())
-        request.send()
+    }
+
+    function refreshSshStatus() {
+        sshService.refresh()
+        sshRefreshAttempts = 2
+        sshRefreshTimer.restart()
+    }
+
+    function loadSshStatus() {
+        var values = sshService.status()
+        if (!values || !values.running)
+            return
+        root.sshRunning = values.running === "on" ? qsTr("已开启") : qsTr("未开启")
+        root.sshIp = values.ip || qsTr("未连接 Wi-Fi")
+        root.sshPort = values.port || "22"
+        root.sshUser = values.user || "user"
+        root.sshKeyStatus = values.key_status || qsTr("未配置")
+        root.sshCommand = values.command || ""
     }
 
     function showTip(message) {

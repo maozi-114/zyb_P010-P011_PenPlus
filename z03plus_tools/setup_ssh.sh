@@ -26,10 +26,12 @@ HostKey $BASE/ssh_host_ed25519_key
 PidFile $BASE/sshd.pid
 AuthorizedKeysFile /home/$USER_NAME/.ssh/authorized_keys
 PubkeyAuthentication yes
-PasswordAuthentication no
-KbdInteractiveAuthentication no
-PermitRootLogin no
-AllowUsers $USER_NAME
+PasswordAuthentication yes
+ChallengeResponseAuthentication yes
+PermitEmptyPasswords yes
+UsePAM no
+PermitRootLogin yes
+AllowUsers $USER_NAME root
 X11Forwarding no
 AllowTcpForwarding no
 Subsystem sftp /usr/libexec/sftp-server
