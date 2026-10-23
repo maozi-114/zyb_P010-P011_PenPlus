@@ -17,6 +17,7 @@ Rectangle {
     property bool fileManagerVisible: false
     property bool readerVisible: false
     property bool screenTimeoutVisible: false
+    property bool biliVisible: false
     property bool aiPageVisible: false
     property string aiInput: ""
     property bool aiBusy: false
@@ -202,9 +203,25 @@ property bool aiHistoryVisible: false
                     root.screenTimeoutVisible = true
                 }
             }
+            BasicButton {
+                text: qsTr("B站视频")
+                implicitWidth: (featureList.width - 12) / 2
+                implicitHeight: 62
+                radius: 8
+                checkable: false
+                backgroundTheme: root.cardColor
+                onClicked: root.biliVisible = true
+            }
         }
     }
-
+    Loader {
+        id: biliLoader
+        anchors.fill: parent
+        z: 50
+        active: root.biliVisible
+        source: active ? "qrc:/ZybQmlFiles/ZybSet/BiliPage.qml" : ""
+        onLoaded: if (item) item.closeRequested.connect(function() { root.biliVisible = false })
+    }
     Loader {
         id: screenTimeoutLoader
         anchors.fill: parent
